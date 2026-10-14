@@ -30,6 +30,53 @@ jobs:
         run: bundle exec jekyll build --strict_front_matter
         env:
           JEKYLL_ENV: production
+      - name: Verify homepage content
+        run: |
+          python - <<'PY'
+          from html import unescape
+          from pathlib import Path
+          import re
+
+          site = Path('_site')
+          titles = [
+              'SynLogic: Synthesizing Verifiable Reasoning Data at Scale for Learning Logical Reasoning and Beyond',
+              'On the Perception Bottleneck of VLMs for Chart Understanding',
+              'On the Universal Truthfulness Hyperplane Inside LLMs',
+              'In-Context Sharpness as Alerts: An Inner Representation Perspective for Hallucination Mitigation',
+              'C-Eval: A Multi-Level Multi-Discipline Chinese Evaluation Suite for Foundation Models',
+              'Composing Parameter-Efficient Modules with Arithmetic Operations',
+          ]
+          slugs = [
+              'synlogic', 'perception-bottleneck', 'universal-truthfulness-hyperplane',
+              'in-context-sharpness', 'c-eval', 'parameter-efficient-modules',
+          ]
+          pages = {
+              name: (site / name / 'index.html').read_text()
+              for name in ['.', 'publications']
+          }
+          for name, markup in pages.items():
+              plain = re.sub(r'\s+', ' ', unescape(re.sub(r'<[^>]+>', ' ', markup)))
+              for title in titles:
+                  assert title in plain, f'Missing publication on {name}: {title}'
+              assert 'Your Name' not in plain
+              assert 'Paper Title Number' not in plain
+              for slug in slugs:
+                  assert f'href="/LJT-Homepage/publications/{slug}/"' in markup
+
+          about = re.sub(r'\s+', ' ', unescape(re.sub(r'<[^>]+>', ' ', pages['.'])))
+          for text in [
+              'Junteng Liu', 'Professor Junxian He', 'Research Interests and Skills',
+              'Education', 'Research Experience', 'Honors and Awards', 'Contact',
+              'Zhiyuan Honor Scholarship', 'jliugi@connect.ust.hk', 'Vicent0205',
+              'junteng88716710', 'Zifei Shan', 'Prof. Yu Cheng',
+          ]:
+              assert text in about, f'Missing profile information: {text}'
+
+          assert {p.name for p in (site / 'publications').iterdir() if p.is_dir()} == set(slugs)
+          for route in ['cv', 'teaching', 'portfolio', 'talks', 'markdown']:
+              assert not (site / route).exists(), f'Unexpected page: {route}'
+          print('Verified all six publications on both pages, profile details, and removal of unused pages.')
+          PY
       - name: Configure GitHub Pages
         id: pages
         uses: actions/configure-pages@v6.0.0
