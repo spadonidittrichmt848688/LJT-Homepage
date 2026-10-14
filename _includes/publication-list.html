@@ -1,0 +1,16 @@
+{% include base_path %}
+{% assign sorted_publications = site.publications | sort: "year" | reverse %}
+{% for publication in sorted_publications %}
+  <div class="list__item">
+    <article class="archive__item">
+      <h3 class="archive__item-title">
+        <a href="{{ base_path }}{{ publication.url }}">{{ publication.title | escape }}</a>
+      </h3>
+      <p>{{ publication.authors | join: ", " | escape }}</p>
+      <p><em>{{ publication.venue | escape }}</em>, {{ publication.year }}</p>
+      {% if publication.author_role %}
+        <p><strong>{{ publication.author_role | escape }}:</strong> {{ site.author.name | escape }}</p>
+      {% endif %}
+    </article>
+  </div>
+{% endfor %}
